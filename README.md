@@ -2,7 +2,7 @@
 
 ## Background and goals
 
-In the [previous AWS project][PolybotServiceAWS], you've provisioned a scalable, highly available and well-architected Polybot service using cloud resources. 
+In the previous Kubernetes, you've provisioned a scalable, highly available and well-architected Polybot service using cloud resources. 
 
 This project focuses on Infrastructure as Code (IaC) techniques in order to automate the provisioning of the cloud resources for your Polybot service **in different AWS regions**. 
 
@@ -15,7 +15,7 @@ Why is this good? Here are just three reasons among many...
 ## Preliminaries
 
 No need to fork this repo as it doesn't contain code resources. 
-You can work on the same repo used in the previous AWS project.
+You can work on the same repo used in the previous Kubernetes project.
 
 > [!WARNING]
 > This project involves working with multiple AWS services. 
@@ -27,16 +27,16 @@ Let's get started...
 
 ## Configuration files - structure and usage
 
-Here is a general structure for the Terraform root module directory:
+In your **Polybot Infra** repo, here is a general structure for the Terraform root module directory:
 
 ```text
 tf/
 ├── modules/
-├───── polybot/                         # Module for polybot resources
+├───── k8s-cluster/                         # Module for k8s cluster related resources (instances, sg, iam, asg, lb, etc..)
 │      ├── main.tf
 │      ├── variables.tf
 │      └── outputs.tf
-├───── yolo5/                           # Module for yolo5 resources
+├───── polybot/                           # Module for polybot and yolo5 related resources (sqs, s3, etc, secret manager...)
 │      ├── main.tf
 │      ├── variables.tf
 │      └── outputs.tf
@@ -74,7 +74,7 @@ terraform destroy -var-file=region.us-east-1.tfvars
 
 ## General notes
 
-- As the above configuration files structure suggests, the Polybot and Yolo5 microservice should be configured as separate **Terraform Modules**. 
+- As the above configuration files structure suggests, the `k8s-cluster` and `polybot` should be configured as separate **Terraform Modules**. 
 - Since Terraform can provision and destroy the same infrastructure consistently, avoid additional charges and don't keep your AWS resources existing for long time. **Destroy them when you don't work on your project**. 
 - Don't store sensitive data in the `.tf` or `.tfvars` files.
 - Feel free to use other Terraform modules (e.g. for VPC, ASG, etc...).
@@ -107,21 +107,22 @@ All your `.tf` configuration files should be region-agnostic, which means, you h
 To avoid large charges in AWS, test the service provisioning in **2 different regions only** (and once it works, destroy it).
 Generalizing it to more regions should be as simple as creating the corresponding `.tfvars` file for the region, as well as generating a new Telegram token. 
 
-## Deploy the Polybot and the Yolo5 apps in their EC2 instances
+## Deploy the Polybot and the Yolo5 services in the cluster
 
-As you may know, in order for the service to be up and running, it's necessary not only to provision the underlying infrastructure but also to deploy the Polybot and Yolo5 apps within their respective EC2 instances. 
+As you may know, in order for the service to be up and running, it's necessary not only to provision the underlying infrastructure, but also to deploy the Polybot and Yolo5 apps within the provisioned Kubernetes cluster. 
 
-Feel free to design your own solution, but you are highly encouraged to leverage the CI/CD pipeline developed in the previous AWS project for this purpose, which essentially used to automate the deployment of the services in their instances.
+Feel free to design your own solution, but you are highly encouraged to leverage the CI/CD pipeline developed in the previous project for this purpose.
 
 The workflow is as follows: 
 
-1. Terraform is used to provision the infrastructure (leaving the EC2 instances empty):
+1. Terraform is used to provision the infrastructure (leaving the k8s cluster empty):
 
 ```bash
 terraform apply ....
 ```
 
-2. Then, trigger the CI/CD pipeline from previous project (with necessary adjustments) to deploy the initial app version onto the EC2 instances.
+2. (Optional) Trigger a CI/CD pipeline to bootstrap the cluster (`kubeadm init`, install Calico CNI, install nginx Ingress controller, install ArgoCD with its apps). This is an optional step, you are free to implement the cluster bootstrapping in any other way (e.g. by trigger a Lambda function immediately after the cluster infrastructure provisioned).
+3. Then, trigger the CI/CD pipeline from previous project (with necessary adjustments) to deploy the initial app version onto the cluster.
 
 ## Integrate a simple CI/CD pipeline for Terraform 
 
@@ -139,6 +140,60 @@ You're provided with three GitHub Actions workflows:
 Feel free to use these pipelines as a starting point for your work. 
 
 Test the pipeline by making changes to your Terraform configurations and observing the provisioning process in AWS.
+
+## Improvements to the Polybot service in the cluster level
+
+#### Make the MongoDB persistent with EBS-CSI plugin 
+
+The EBS [Container Storage Interface (CSI)](https://github.com/container-storage-interface/spec) driver create and attach EBS volumes as storage for your Pods. 
+
+Install the addon from the [official project repo](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/blob/master/docs/install.md).
+
+Add the aws-ebs-csi-driver Helm repository.
+ 
+```bash
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+helm repo update
+```
+
+Create a values file as follows:
+
+```yaml
+# ebs-csi-values.yaml
+
+storageClasses:
+  - name: ebs-sc
+    annotations:
+      storageclass.kubernetes.io/is-default-class: "true"
+    provisioner: ebs.csi.aws.com
+    volumeBindingMode: WaitForFirstConsumer
+    parameters:
+      csi.storage.k8s.io/fstype: xfs
+      type: gp2
+      encrypted: "true"
+```
+
+Install the latest release of the driver.
+
+```bash
+helm upgrade --install aws-ebs-csi-driver -f ebs-csi-values.yaml -n kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+```
+
+#### Dev and Prod environments 
+
+Your service should be deployed for both **Development** and **Production** environments, **on the same** Kubernetes cluster.
+
+As a principal, the resources related to each environment should be **completely independent**:
+
+- Two different Telegram tokens for 2 bots.
+- Different resources in AWS: S3, SQS, Secret Manager, etc...
+- Different namespaces in Kubernetes (create the `dev` and `prod` namespaces and deploy each env in its own namespace).
+
+> [!NOTE]
+> While it's possible to separate compute resources in Kubernetes, for this project, we will share EC2 instances and VPC to save costs. 
+> This means both environments will use the same underlying infrastructure for compute, but remain logically separated within the cluster.
+
+Make sure to align your CI/CD pipelines to reflect different environments as done in class. 
 
 ## Getting started template
 
