@@ -27,20 +27,52 @@ module "worker_node_iam_roles" {
   source = "./ec2/iam_role/worker_node_iam_role"
 }
 
-data "aws_ami_ids" "ubuntu" {
-  owners = ["099720109477"]
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/ubuntu-*-*-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
   }
 }
 
+
 resource "aws_instance" "control_plane" {
-  ami = data.aws_ami_ids.ubuntu.id
+  ami = data.aws_ami.ubuntu.id
   instance_type = "t3.medium"
   subnet_id = module.vpc.public_subnets[0]
   iam_instance_profile = module.control_plane_iam_roles.control_plane_instance_profile_name
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+  tags = {
+    Name = "tf-lidor_control_plane_projectf"
+    Environment = var.env
+    Region = var.region
+  }
+}
+
+resource "aws_instance" "worker_node" {
+  ami = data.aws_ami.ubuntu.id
+  instance_type = "t3.medium"
+  subnet_id = module.vpc.public_subnets[1]
+  iam_instance_profile = module.worker_node_iam_roles.worker_node_instance_profile_name
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
   tags = {
     Name = "tf-lidor_control_plane_projectf"
     Environment = var.env
