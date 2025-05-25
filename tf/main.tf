@@ -19,12 +19,12 @@ provider "aws" {
   region = var.region
 }
 
-module "control_plane_iam_roles" {
-  source = "./ec2/iam_role/control_plane_iam_role"
+module "control_plane_module" {
+  source = "ec2/iam_role/control_plane_module"
 }
 
-module "worker_node_iam_roles" {
-  source = "./ec2/iam_role/worker_node_iam_role"
+module "worker_node_module" {
+  source = "ec2/iam_role/worker_node_module"
 }
 
 data "aws_ami" "ubuntu" {
@@ -52,7 +52,8 @@ resource "aws_instance" "control_plane" {
   ami = data.aws_ami.ubuntu.id
   instance_type = "t3.medium"
   subnet_id = module.vpc.public_subnets[0]
-  iam_instance_profile = module.control_plane_iam_roles.control_plane_instance_profile_name
+  iam_instance_profile = module.control_plane_module.control_plane_instance_profile_name
+  vpc_security_group_ids = [module.control_plane_module.control_plane_security_group]
   root_block_device {
     volume_size = 20
     volume_type = "gp3"
@@ -68,7 +69,8 @@ resource "aws_instance" "worker_node" {
   ami = data.aws_ami.ubuntu.id
   instance_type = "t3.medium"
   subnet_id = module.vpc.public_subnets[1]
-  iam_instance_profile = module.worker_node_iam_roles.worker_node_instance_profile_name
+  iam_instance_profile = module.worker_node_module.worker_node_instance_profile_name
+  vpc_security_group_ids = [module.worker_node_module.worker_node_security_group]
   root_block_device {
     volume_size = 20
     volume_type = "gp3"
@@ -99,4 +101,3 @@ module "vpc" {
     Environment = var.env
   }
 }
-
