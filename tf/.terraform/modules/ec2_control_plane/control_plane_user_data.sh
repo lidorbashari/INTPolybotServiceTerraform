@@ -45,7 +45,7 @@ swapoff -a
 
 sudo kubeadm init
 
-JOIN_CMD=$(kubeadm token create --print-join-command)
+JOIN_CMD=$(sudo kubeadm token create --print-join-command)
 
 # שמירת הפקודה ל-S3 (יש לוודא שה-EC2 role כולל הרשאות S3 כתיבה)
 echo "$JOIN_CMD" > /root/join_command.sh
@@ -53,16 +53,16 @@ aws s3 cp /root/join_command.sh s3://lidor-project-bucket-tf/join-commands/join_
 
 # סיום הגדרות, למשל יצירת קובץ kubeconfig ל-admin
 mkdir -p $HOME/.kube
-cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+if id "ubuntu" &>/dev/null; then
+  mkdir -p /home/ubuntu/.kube
+  cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
+  chown ubuntu:ubuntu /home/ubuntu/.kube/config
+fi
 
 # התקן Calico או CNI אחר (אפשר להוסיף כאן)
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
 
 aws s3 cp s3://lidor-project-bucket-tf/join-commands/join_command.sh /root/join_command.sh
-
-# תן הרשאות ריצה
-chmod +x /root/join_command.sh
-
-# הרץ את הפקודה להצטרפות ל-cluster
-sudo /root/join_command.sh

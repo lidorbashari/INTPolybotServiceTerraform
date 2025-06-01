@@ -1,8 +1,7 @@
-
-
 resource "aws_security_group" "lidor-sg-worker-node-tf" {
   name        = "lidor-sg-worker-node-tf"   # change <your-name> accordingly
   description = "Allow SSH and HTTP traffic"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 22

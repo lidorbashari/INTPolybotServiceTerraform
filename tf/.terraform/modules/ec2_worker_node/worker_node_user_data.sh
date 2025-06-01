@@ -42,3 +42,7 @@ swapoff -a
 
 # add the command to crontab to make it persistent across reboots
 (crontab -l ; echo "@reboot /sbin/swapoff -a") | crontab -
+
+aws s3 cp s3://lidor-project-bucket-tf/join-commands/join_command.sh /root/join_command.sh
+
+sudo bash /root/join_command.sh
