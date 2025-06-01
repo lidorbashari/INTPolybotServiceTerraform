@@ -1,0 +1,60 @@
+name: tf apply for each state and region
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "choose region"
+        required: true
+        type: choice
+        options:
+          - eu-north-1
+          - us-east-2
+      environment:
+        description: "choose enviroment"
+        required: true
+        type: choice
+        options:
+          - prod
+          - dev
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: terraform fmt
+        working-directory: tf
+        run: terraform fmt
+        continue-on-error: true
+
+      - name: terraform init
+        working-directory: tf
+        run: |
+          terraform init \
+            -backend-config="bucket=lidor-project-bucket-tf" \
+            -backend-config="key=tfstate.json" \
+            -backend-config="region=eu-north-1"
+
+      - name: terraform workspace
+        working-directory: tf
+        run: terraform workspace select ${{ github.event.inputs.region }} || terraform workspace new ${{ github.event.inputs.region }}
+
+      - name: terraform validate
+        working-directory: tf
+        run: terraform validate -no-color
+
+      - name: terraform apply
+        working-directory: tf
+        run: terraform apply -auto-approve -var-file region.${{ github.event.inputs.region }}.tfvars -var-file environment-${{ github.event.inputs.environment }}.tfvars
