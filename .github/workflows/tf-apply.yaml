@@ -58,6 +58,12 @@ jobs:
         working-directory: tf
         run: terraform validate -no-color
 
+      - name: Save private key
+        run: |
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/lidorbashkey.pem
+          chmod 600 ~/.ssh/lidorbashkey.pem
+
+
       - name: terraform apply
         working-directory: tf
         run: terraform apply -auto-approve -var-file region.${{ github.event.inputs.region }}.tfvars -var-file environment-${{ github.event.inputs.environment }}.tfvars
