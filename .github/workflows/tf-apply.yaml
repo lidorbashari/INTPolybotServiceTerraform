@@ -60,6 +60,7 @@ jobs:
 
       - name: Save private key
         run: |
+          mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/lidorbashkey.pem
           chmod 600 ~/.ssh/lidorbashkey.pem
 
