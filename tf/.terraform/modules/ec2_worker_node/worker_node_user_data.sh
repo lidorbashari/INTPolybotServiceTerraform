@@ -43,6 +43,26 @@ swapoff -a
 # add the command to crontab to make it persistent across reboots
 (crontab -l ; echo "@reboot /sbin/swapoff -a") | crontab -
 
-aws s3 cp s3://lidor-project-bucket-tf/join-commands/join_command.sh /root/join_command.sh
+until aws s3 cp s3://lidor-project-bucket-tf/join-commands/join_command.sh /tmp/join_command.sh; do
+  echo "Waiting for join_command.sh to appear in S3..."
+  sleep 5
+done
 
-sudo bash /root/join_command.sh
+chmod +x /tmp/join_command.sh
+
+# מנסה להריץ את פקודת ההצטרפות (נניח שהיא תיכשל רק אם יש בעיה אמיתית)
+if sudo bash /tmp/join_command.sh; then
+  echo "Join command succeeded"
+else
+  echo "Join command failed"
+  exit 1
+fi
+
+# רק עכשיו נבדוק אם kubelet באמת רץ
+until systemctl is-active --quiet kubelet; do
+  echo "Waiting for kubelet to become active after join..."
+  sleep 5
+done
+
+echo "✅ Worker joined and kubelet is active"
+

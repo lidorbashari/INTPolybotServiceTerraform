@@ -45,12 +45,6 @@ swapoff -a
 
 sudo kubeadm init
 
-JOIN_CMD=$(sudo kubeadm token create --print-join-command)
-
-# שמירת הפקודה ל-S3 (יש לוודא שה-EC2 role כולל הרשאות S3 כתיבה)
-echo "$JOIN_CMD" > /root/join_command.sh
-aws s3 cp /root/join_command.sh s3://lidor-project-bucket-tf/join-commands/join_command.sh
-
 # סיום הגדרות, למשל יצירת קובץ kubeconfig ל-admin
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -62,7 +56,14 @@ if id "ubuntu" &>/dev/null; then
   chown ubuntu:ubuntu /home/ubuntu/.kube/config
 fi
 
-# התקן Calico או CNI אחר (אפשר להוסיף כאן)
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
+echo "Waiting for kube-apiserver..."
+until curl -k https://localhost:6443/healthz; do sleep 5; done
 
-aws s3 cp s3://lidor-project-bucket-tf/join-commands/join_command.sh /root/join_command.sh
+aws s3 rm s3://lidor-project-bucket-tf/join-commands/join_command.sh || true
+
+JOIN_CMD=$(sudo kubeadm token create --print-join-command)
+echo "$JOIN_CMD" > /tmp/join_command.sh
+aws s3 cp /tmp/join_command.sh s3://lidor-project-bucket-tf/join-commands/join_command.sh
+
+# Install Calico CNI
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml

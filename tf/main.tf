@@ -26,7 +26,7 @@ module "control_plane_module" {
   subnet_id = module.vpc.public_subnets[0]
   env       = var.env
   region    = var.region
-  key_name = "lidorbashkey"
+  key_name = aws_key_pair.polybot.key_name
 }
 
 module "worker_node_module" {
@@ -36,7 +36,7 @@ module "worker_node_module" {
   subnet_id = module.vpc.public_subnets[1]
   env       = var.env
   region    = var.region
-  key_name = "lidorbashkey"
+  key_name = aws_key_pair.polybot.key_name
   depends_on = [module.control_plane_module]
 }
 
@@ -58,4 +58,9 @@ module "vpc" {
     Terraform   = "true"
     Environment = var.env
   }
+}
+
+resource "aws_key_pair" "polybot" {
+  key_name   = "polybot-key"
+  public_key = file("${path.module}/keys/polybot-key.pub")
 }
