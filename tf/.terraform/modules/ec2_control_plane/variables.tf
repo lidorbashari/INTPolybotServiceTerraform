@@ -28,3 +28,8 @@ variable "key_name" {
   description = "key for ec2"
   type = string
 }
+
+variable "worker_nodes_sg_id" {
+  description = "Security group ID of the worker nodes"
+  type        = string
+}

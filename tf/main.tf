@@ -28,6 +28,7 @@ module "control_plane_module" {
   env       = var.env
   region    = var.region
   key_name = aws_key_pair.polybot.key_name
+  worker_nodes_sg_id = module.worker_node_module.worker_node_sg_id
 }
 
 module "worker_node_module" {
@@ -38,7 +39,6 @@ module "worker_node_module" {
   env       = var.env
   region    = var.region
   key_name = aws_key_pair.polybot.key_name
-  depends_on = [module.control_plane_module]
 }
 
 module "vpc" {

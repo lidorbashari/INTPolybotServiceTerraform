@@ -9,3 +9,7 @@ output "instance_id" {
 output "security_group_id" {
   value = aws_security_group.lidor-sg-worker-node-tf.id
 }
+
+output "worker_node_sg_id" {
+  value = aws_security_group.lidor-sg-worker-node-tf.id
+}

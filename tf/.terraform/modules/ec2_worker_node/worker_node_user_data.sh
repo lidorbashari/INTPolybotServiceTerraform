@@ -4,7 +4,7 @@ set -e
 # These instructions are for Kubernetes v1.32.
 KUBERNETES_VERSION=v1.32
 
-sleep 20
+sleep 60
 sudo apt-get update
 sudo apt-get install jq unzip ebtables ethtool -y
 

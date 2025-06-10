@@ -6,6 +6,6 @@ output "instance_id" {
   value = aws_instance.control_plane.id
 }
 
-output "security_group_id" {
+output "control_plane_sg_id" {
   value = aws_security_group.lidor-sg-control-plane-tf.id
 }

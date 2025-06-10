@@ -1,7 +1,8 @@
+
 resource "aws_security_group" "lidor-sg-control-plane-tf" {
-  name        = "lidor-sg-control-plane-tf"   # change <your-name> accordingly
-  description = "Allow SSH and HTTP traffic"
-  vpc_id = var.vpc_id
+  name        = "lidor-sg-control-plane-tf"
+  description = "Control Plane SG"
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 22
@@ -24,6 +25,12 @@ resource "aws_security_group" "lidor-sg-control-plane-tf" {
     cidr_blocks = ["10.0.0.0/16"]
   }
 
+  ingress {
+  from_port   = 0
+  to_port     = 0
+  protocol    = "4"
+  cidr_blocks = ["10.0.0.0/16"]
+}
 
   egress {
     from_port   = 0
@@ -31,4 +38,13 @@ resource "aws_security_group" "lidor-sg-control-plane-tf" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_security_group_rule" "allow_all_from_workers" {
+  type                     = "ingress"
+  from_port               = 0
+  to_port                 = 65535
+  protocol                = "tcp"
+  security_group_id        = aws_security_group.lidor-sg-control-plane-tf.id
+  source_security_group_id = var.worker_nodes_sg_id
 }
