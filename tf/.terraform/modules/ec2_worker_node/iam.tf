@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "worker_node_s3" {
 
 resource "aws_iam_role_policy_attachment" "worker_node_secretsmanager_readonly" {
   role       = aws_iam_role.worker_node_role.name
-  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadOnly"
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 }
 
 resource "aws_iam_instance_profile" "worker_node_profile" {
