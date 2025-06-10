@@ -80,14 +80,6 @@ resource "aws_secretsmanager_secret" "telegram_bot" {
 }
 
 resource "aws_secretsmanager_secret_version" "telegram_bot_version" {
-  secret_id = aws_secretsmanager_secret.telegram_bot.id
-  secret_string = jsonencode({
-    TELEGRAM_BOT_TOKEN = var.telegram_token
-  })
-
-  lifecycle {
-    replace_triggered_by = [
-      var.telegram_token
-    ]
-  }
+  secret_id     = aws_secretsmanager_secret.telegram_bot.id
+  secret_string = var.telegram_token
 }
