@@ -29,6 +29,11 @@ resource "aws_iam_role_policy_attachment" "worker_node_s3" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "worker_node_secretsmanager_readonly" {
+  role       = aws_iam_role.worker_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadOnly"
+}
+
 resource "aws_iam_instance_profile" "worker_node_profile" {
   name = "worker_node_profile"
   role = aws_iam_role.worker_node_role.name
