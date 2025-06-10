@@ -12,3 +12,8 @@ variable "region" {
   description = "the region that i workd about"
   type        = string
 }
+
+variable "telegram_token" {
+  description = "the token of bot"
+  type = string
+}

@@ -67,4 +67,6 @@ jobs:
 
       - name: terraform apply
         working-directory: tf
-        run: terraform apply -auto-approve -var-file region.${{ github.event.inputs.region }}.tfvars -var-file environment-${{ github.event.inputs.environment }}.tfvars
+        run: |
+          terraform apply -auto-approve -var-file region.${{ github.event.inputs.region }}.tfvars -var-file environment-${{ github.event.inputs.environment }}.tfvars \
+          -var="telegram_token=${{ secrets.TELEGRAM_BOT_TOKEN }}"    

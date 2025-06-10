@@ -67,3 +67,17 @@ aws s3 cp /tmp/join_command.sh s3://lidor-project-bucket-tf/join-commands/join_c
 
 # Install Calico CNI
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.2/manifests/calico.yaml
+
+sudo apt-get update
+sudo apt-get install -y curl tar git
+
+# התקנת kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# התקנת Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# בדיקת התקנה
+helm version
+kubectl version --client

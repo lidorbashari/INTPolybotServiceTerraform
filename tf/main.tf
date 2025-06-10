@@ -19,6 +19,7 @@ provider "aws" {
   region = var.region
 }
 
+
 module "control_plane_module" {
   source    = "./.terraform/modules/ec2_control_plane"
   ami_id    = data.aws_ami.ubuntu.id
@@ -61,6 +62,21 @@ module "vpc" {
 }
 
 resource "aws_key_pair" "polybot" {
-  key_name   = "polybot-key"
+  key_name   = "polybot-key2"
   public_key = file("${path.module}/keys/polybot-key.pub")
+}
+
+module "polybot_resources" {
+  source = "./.terraform/modules/polybot"
+  env    = var.env
+  region = var.region
+}
+
+resource "aws_secretsmanager_secret" "telegram_bot" {
+  name = "lidor-telegram-tf-token"
+}
+
+resource "aws_secretsmanager_secret_version" "telegram_bot_version" {
+  secret_id = aws_secretsmanager_secret.telegram_bot.id
+  secret_string = var.telegram_token
 }
